@@ -40,7 +40,6 @@ class RedCard():
         return f"{self.__class__.__name__}(kind={self.kind}, action={action})"
 
 
-
 def dump_deque(filename, deque):
     with open(filename, "w") as file:
         file.write(yaml.dump(deque))
