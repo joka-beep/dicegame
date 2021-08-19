@@ -1,0 +1,20 @@
+Game idea:
+ - Warm-up phase can be set by the user before the first card is drawn
+ - Fixed Deck for a locking session
+    - Drawn cards are removed from the deck
+ - Key-Cards will stick when found if more than one is required (Green)
+ - Max hours is the sum of all num cards (Black)
+    - could be automatically generated from the number of hours set by user
+    - May change due to Deck Cards
+    - Locking when they are drawn for the number of hours
+ - Action Cards: They contain actions that need to be performed and have a cooldown time after completion (Blue)
+    - Ruined orgasms +12h cooldown
+    - Anal training + 12h cooldown
+    - Edging + 3h cooldown
+    - ...?
+    - Action cards could be coupled with porn content like JOI videos or images
+ - Deck cards: Add new cards to the deck (Yellow)
+    - can be defined in the settings
+    - e.g.: Only action cards are added or only num cards are added
+
+
