@@ -142,7 +142,7 @@ class MainGameWidget(QWidget):
 			else:
 				logging.info("lock value invalid, ignoring")
 		else:
-			logging.info("content kind was not recognized:", kind, content)
+			logging.info("content kind was not recognized:" + kind + content)
 
 	def update_welcome(self, timer=None):
 		if self.time_restrictor.is_restricted():
