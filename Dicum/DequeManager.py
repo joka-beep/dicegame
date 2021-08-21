@@ -64,7 +64,7 @@ class DequeManager():
             file.write(yaml.dump(deque))
 
     def save_deque(self):
-        save_specific_deque(self.filename, self.deque)
+        DequeManager.save_specific_deque(self.filename, self.deque)
 
     def load_deque(self):
         with open(self.filename, "r") as file:

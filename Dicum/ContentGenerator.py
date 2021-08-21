@@ -18,8 +18,6 @@ class ContentGenerator:
         self.available_images = []
         self.__index_image_folder()
         self.commands = self.__get_commands()
-        self.deque = DequeManager(Configuration().DEQUE_FILE)
-        print(self.deque)
 
         try:
             copy_tree(Configuration().SCRIPTS, os.path.join(Configuration().TEMP_LOCATION, "js"))
@@ -29,21 +27,11 @@ class ContentGenerator:
             logging.critical("Content could not be loaded. file not found error")
             exit(1)
 
-    def get_size(self):
-        return self.deque.get_size()
-
     def get_next(self):
         try:
             return self.commands.pop()
         except IndexError:
             logging.error("get_next failed, no more elements to pop")
-            return None
-    
-    def get_next_card(self):
-        try:
-            return self.__generate_content_for_card(self.deque.get_card())
-        except IndexError:
-            logging.error("get_next_card failed, no more elements to pop")
             return None
 
     def get_restricted(self, end_time_iso):
@@ -76,13 +64,13 @@ class ContentGenerator:
         self.available_images = [image for image in self.available_images if self.__is_image(image)]
         random.shuffle(self.available_images)
 
-    def __generate_content_for_card(self, card):
+    def generate_content_for_card(self, card):
         if card.kind == "green":
-            return "unlock", "", ""
+            return "lock", "unlock", ""
         elif card.kind == "black":
-            return "lock", "", card.hours
+            return "lock", "lock", card.hours
         elif card.kind == "yellow": # todo implement functionality
-            return "lock", "", 0
+            return "lock", "lock", 0
         elif card.kind == "red":
             template = self.env.get_template("task_dialog.html")
             return "html",  template.render(), card.hours

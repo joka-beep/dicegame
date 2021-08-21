@@ -16,6 +16,7 @@ from PyQt5.QtCore import QTimer, QUrl
 
 from Configuration import Configuration
 from ContentGenerator import ContentGenerator
+from DequeManager import DequeManager
 from TimeRestrictor import TimeRestrictor
 from LockCounterWidget import LockCounterWidget
 
@@ -35,9 +36,8 @@ class StyledPushButton(QPushButton):
 
 
 class MainGameWidget(QWidget):
-	def __init__(self, commands_file):
+	def __init__(self):
 		super(QWidget, self).__init__()
-		self.commands_file = commands_file  # store filename for reset
 		self.__reset()
 		self.__setup_ui()
 		self.__run_ui()
@@ -58,15 +58,16 @@ class MainGameWidget(QWidget):
 		if lock_counter:
 			lock_counter.reset()
 		self.generator = ContentGenerator()
+		self.deque = DequeManager(Configuration().DEQUE_FILE)
 
 	def __setup_ui(self):
 		# calculate button row and column length based on number of commands
-		self.button_array = [StyledPushButton() for _ in range(self.generator.get_size())]
+		self.button_array = [StyledPushButton() for _ in range(self.deque.get_size())]
 
 		# self.button_rows = self.isqrt(self.generator.get_size())
 		# self.button_cols = self.button_rows if self.button_rows * (self.button_rows + 1) > self.generator.get_size() else self.button_rows + 1
 		self.button_rows = 1
-		self.button_cols = self.generator.get_size()
+		self.button_cols = self.deque.get_size()
 
 		self.button_widget = QWidget(self)
 		# self.button_widget.setFixedSize(500, 130)
@@ -100,7 +101,9 @@ class MainGameWidget(QWidget):
 		self.layout().addWidget(self.base_widget)
 
 	def get_content(self, pos):
-		content_item = self.generator.get_next_card()
+		drawn_card = self.deque.get_card()
+		content_item = self.generator.generate_content_for_card(drawn_card)
+
 		if not content_item:
 			return
 		kind, content, time = content_item
@@ -201,7 +204,7 @@ class MainWindow(QMainWindow):
 		super(MainWindow, self).__init__(*args, **kwargs)
 		self.setWindowTitle("Dicum")
 		# self.menuBar().addMenu("Dicum")
-		self.main_widget = MainGameWidget(sys.argv[1] if len(sys.argv) > 1 else Configuration().GAME_CONFIG)
+		self.main_widget = MainGameWidget()
 		self.setCentralWidget(self.main_widget)
 		self.setGeometry(0, 0, 1500, 1250)
 
@@ -210,6 +213,7 @@ class MainWindow(QMainWindow):
 	def closeEvent(self, event):
 		if self.main_widget.time_restrictor.restriction_time_changed:
 			self.main_widget.time_restrictor.store_restriction_time()
+		self.main_widget.deque.save_deque()
 		event.accept()
 
 
