@@ -1,3 +1,6 @@
+import logging
+import os
+import random
 import yaml
 
 
@@ -17,7 +20,7 @@ class BlackCard():
         self.hours = hours
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(kind={self.kind}, hours={hours})"
+        return f"{self.__class__.__name__}(kind={self.kind}, hours={self.hours})"
 
 
 class YellowCard():
@@ -27,34 +30,44 @@ class YellowCard():
         self.number = number
     
     def __repr__(self):
-        return f"{self.__class__.__name__}(kind={self.kind}, number={number})"
+        return f"{self.__class__.__name__}(kind={self.kind}, number={self.number})"
 
 
 class RedCard():
     yaml_tag = "!RedCard"
-    def __init__(self, action):
+    def __init__(self, action, hours=12):
         self.kind = "red"
         self.action = action
+        self.hours = hours
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(kind={self.kind}, action={action})"
+        return f"{self.__class__.__name__}(kind={self.kind}, action={self.action}, hours={self.hours})"
 
 
-def dump_deque(filename, deque):
-    with open(filename, "w") as file:
-        file.write(yaml.dump(deque))
+class DequeManager():
+    def __init__(self, filename):
+        self.filename = filename
+        self.load_deque()
+        if not self.deque:
+            logging.warning("Loaded deque is empty.")
+        random.shuffle(self.deque)
 
-def load_deque(filename):
-    with open(filename, "r") as file:
-        text = file.read()
-        return yaml.load(text, Loader=yaml.Loader)
+    def get_size(self):
+        return len(self.deque)
 
+    def get_card(self):
+        return self.deque.pop()
 
-dump_deque("test.yaml", liste)
+    @staticmethod
+    def save_specific_deque(filename, deque):
+        with open(filename, "w") as file:
+            file.write(yaml.dump(deque))
 
-restored_liste = load_deque("test.yaml")
+    def save_deque(self):
+        save_specific_deque(self.filename, self.deque)
 
-for card in restored_liste:
-    print(card.kind)
-    if card.kind == "black":
-        print(card.hours)
+    def load_deque(self):
+        with open(self.filename, "r") as file:
+            text = file.read()
+            logging.debug(text)
+            self.deque = yaml.load(text, Loader=yaml.Loader)

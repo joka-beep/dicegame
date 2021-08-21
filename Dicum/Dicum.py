@@ -1,7 +1,8 @@
 #!/bin/python3
 
-import sys
+
 import os
+import sys
 import logging
 import tempfile
 
@@ -13,8 +14,8 @@ from PyQt5.QtWidgets import QApplication, QPushButton, QMainWindow, QVBoxLayout,
 	QSpacerItem, QSizePolicy
 from PyQt5.QtCore import QTimer, QUrl
 
-from ContentGenerator import ContentGenerator
 from Configuration import Configuration
+from ContentGenerator import ContentGenerator
 from TimeRestrictor import TimeRestrictor
 from LockCounterWidget import LockCounterWidget
 
@@ -99,7 +100,7 @@ class MainGameWidget(QWidget):
 		self.layout().addWidget(self.base_widget)
 
 	def get_content(self, pos):
-		content_item = self.generator.get_next()
+		content_item = self.generator.get_next_card()
 		if not content_item:
 			return
 		kind, content, time = content_item
@@ -213,8 +214,8 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == '__main__':
-	logging.basicConfig(filename=tempfile.TemporaryFile().name, level=logging.INFO)
-	# logging.basicConfig(level=logging.DEBUG)
+	#logging.basicConfig(filename=tempfile.TemporaryFile().name, level=logging.DEBUG)
+	logging.basicConfig(level=logging.DEBUG)
 
 	app = QApplication([])
 	app.setStyleSheet(

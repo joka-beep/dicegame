@@ -6,6 +6,8 @@ from datetime import datetime
 
 from shutil import copy2
 
+from DequeManager import *
+
 
 def resource_path(relative_path):
 	""" Get absolute path to resource, works for dev and for PyInstaller. Copied from
@@ -21,7 +23,7 @@ def resource_path(relative_path):
 
 class Configuration:
 	class __Configuration:
-		def __init__(self, commands_file=None):
+		def __init__(self, commands_file=None, deque_file=None):
 			self.LOCK_LIMIT = 2
 			self.UNLOCK_LIMIT = 2
 
@@ -40,6 +42,15 @@ class Configuration:
 						"num,2,0\nnum,3,0\nnum,5,0\nnum,5,0\nnum,12,0\nlock,unlock,0\nlock,unlock,0\nlock,lock,0\nlock,lock,0")
 
 			self.GAME_CONFIG = self.COMMANDS
+
+			if not deque_file:
+				deque_file = "deque.yaml"
+			self.DEQUE_FILE = os.path.join(self.CONFIG, deque_file)
+			if not os.path.isfile(self.DEQUE_FILE):
+				logging.warning("Deque configuration not found, creating from default.")
+				default_deque = [BlackCard(3), BlackCard(3), BlackCard(3), BlackCard(3), RedCard("Fuck with dildo", 12), RedCard("Cum while in chastity", 12), GreenCard()]
+				DequeManager.save_specific_deque(self.DEQUE_FILE, default_deque)
+
 
 			self.LOCK_TIME_LOCATION = os.path.join(self.CONFIG, "time")
 			if not os.path.isfile(self.LOCK_TIME_LOCATION):
