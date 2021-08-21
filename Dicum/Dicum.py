@@ -1,6 +1,5 @@
 #!/bin/python3
 
-
 import os
 import sys
 import logging
@@ -77,7 +76,7 @@ class MainGameWidget(QWidget):
 			for col in range(self.button_cols):
 				pos = row * self.button_cols + col
 				self.button_widget.layout().addWidget(self.button_array[pos], row, col)
-				self.button_array[pos].clicked.connect(partial(self.get_content, pos))
+				self.button_array[pos].clicked.connect(partial(self.draw_card, pos))
 
 		self.button_widget.setSizePolicy(
 			QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding))
@@ -100,53 +99,43 @@ class MainGameWidget(QWidget):
 		self.layout().addWidget(self.view)
 		self.layout().addWidget(self.base_widget)
 
-	def get_content(self, pos):
-		drawn_card = self.deque.get_card()
-		content_item = self.generator.generate_content_for_card(drawn_card)
-
-		if not content_item:
-			return
-		kind, content, time = content_item
+		
+	def draw_card(self, pos):
+		card = self.deque.get_card()
 
 		# update button
 		self.button_array[pos].setEnabled(False)
-		self.button_array[pos].setText(kind)
+		self.button_array[pos].setText(card.kind)
 
-		if kind == "url":
-			self.view.load(QtCore.QUrl(content))
-		elif kind == "html":
-			self.view.setHtml(content, QUrl(Configuration().HTML_REL_PATH))
-		elif kind == "num":
-			self.view.setHtml(
-				self.generator.get_current_restriction(self.time_restrictor.update_restriction_time(content),
-				                                       text="I've added " + content + "h to your Lockup!"),
-				QUrl(Configuration().HTML_REL_PATH))
-		elif kind == "lock":
-			if content == "lock":
-				self.lock_counter += 1
-				self.lock_counter_widget.add_locked()
-				if self.lock_counter >= Configuration().LOCK_LIMIT:
-					self.start_restriction()
-				else:
-					self.view.setHtml(
-						self.generator.get_current_restriction(self.time_restrictor.current_restriction_time,
-						                                       text="How unfortunate, you picked a Lock!"),
-						QUrl(Configuration().HTML_REL_PATH))
-
-			elif content == "unlock":
-				self.unlock_counter += 1
-				self.lock_counter_widget.add_unlocked()
-				if self.unlock_counter >= Configuration().UNLOCK_LIMIT:
-					self.stop_restriction()
-				else:
-					self.view.setHtml(
-						self.generator.get_current_restriction(self.time_restrictor.current_restriction_time,
-						                                       text="Lucky you! Maybe I'll release you this time."),
-						QUrl(Configuration().HTML_REL_PATH))
+		if card.kind == "green":
+			self.unlock_counter += 1
+			self.lock_counter_widget.add_unlocked()
+			if self.unlock_counter >= Configuration().UNLOCK_LIMIT:
+				self.stop_restriction()
 			else:
-				logging.info("lock value invalid, ignoring")
+				self.view.setHtml(
+				                  self.generator.get_current_restriction(self.time_restrictor.current_restriction_time,
+						                                                 text="Lucky you! Maybe I'll release you this time."),
+						          QUrl(Configuration().HTML_REL_PATH))
+		
+		elif card.kind == "black":
+			self.lock_counter += 1
+			self.lock_counter_widget.add_locked()
+			if self.lock_counter >= Configuration().LOCK_LIMIT:
+				self.start_restriction()
+			else:
+				self.view.setHtml(
+					self.generator.get_current_restriction(self.time_restrictor.update_restriction_time(card.hours),
+				                                       text="How unfortuneate, you picked a Lock!\nI've added " + str(card.hours) + "h to your Lockup!"),
+				QUrl(Configuration().HTML_REL_PATH))
+
+		elif card.kind == "yellow": # todo implement functionality
+			logging.error("Not implemented yet.")
+		elif card.kind == "red":
+			self.view.setHtml(self.generator.get_task_view(), QUrl(Configuration().HTML_REL_PATH))
 		else:
-			logging.info("content kind was not recognized:" + kind + content)
+			logging.error("Card type not handled")
+
 
 	def update_welcome(self, timer=None):
 		if self.time_restrictor.is_restricted():

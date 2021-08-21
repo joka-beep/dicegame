@@ -50,6 +50,11 @@ class ContentGenerator:
                                background_image=os.path.join(Configuration().TEMP_IMAGES, Configuration().BG_IMAGE),
                                text=text)
 
+    def get_task_view(self):
+            template = self.env.get_template("task_dialog.html")
+            return template.render()
+
+            
     @staticmethod
     def __is_image(filename):
         supported_types = [".jpeg", ".jpg", ".png", ".webp"]
@@ -63,20 +68,6 @@ class ContentGenerator:
         self.available_images.remove(Configuration().BG_IMAGE)
         self.available_images = [image for image in self.available_images if self.__is_image(image)]
         random.shuffle(self.available_images)
-
-    def generate_content_for_card(self, card):
-        if card.kind == "green":
-            return "lock", "unlock", ""
-        elif card.kind == "black":
-            return "lock", "lock", card.hours
-        elif card.kind == "yellow": # todo implement functionality
-            return "lock", "lock", 0
-        elif card.kind == "red":
-            template = self.env.get_template("task_dialog.html")
-            return "html",  template.render(), card.hours
-        else:
-            logging.error("Card type not handled")
-            return "lock", "", 0
 
     def __interpret_command(self, command):
 
