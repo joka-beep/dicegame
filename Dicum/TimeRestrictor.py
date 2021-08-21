@@ -43,6 +43,13 @@ class TimeRestrictor():
 			file.seek(0)
 			file.write(timestamp.isoformat())
 
+	def reset(self):
+		self.current_restriction_time = timedelta(hours=0)
+		self.restriction_time_changed = False
+
+	def get_current_restriction_time(self):
+		return self.current_restriction_time
+
 	def update_restriction_time(self, time_string):
 		self.restriction_time_changed = True
 		delta = self.parse_time(time_string)

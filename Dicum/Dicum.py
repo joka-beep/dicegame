@@ -46,10 +46,10 @@ class MainGameWidget(QWidget):
 		self.deque = DequeManager(Configuration().DEQUE_FILE)
 		self.view = QtWebEngineWidgets.QWebEngineView()
 		
-		self.button_widget = QWidget(self)
-		self.button_widget.setLayout(QGridLayout())
-		self.button_array = []
-		self.__setup_button_widget()
+		self.card_widget = QWidget(self)
+		self.card_widget.setLayout(QGridLayout())
+		self.card_button_array = []
+		self.__setup_card_widget()
 		
 		self.base_widget = QWidget(self)
 		self.base_widget.setLayout(QHBoxLayout())
@@ -79,22 +79,22 @@ class MainGameWidget(QWidget):
 		self.base_widget.setGeometry(0, 0, 0, 130)
 		self.base_widget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
 		self.base_widget.layout().addItem(QSpacerItem(10, 1, QSizePolicy.Ignored, QSizePolicy.Preferred))
-		self.base_widget.layout().addWidget(self.button_widget)
+		self.base_widget.layout().addWidget(self.card_widget)
 		self.base_widget.layout().addItem(QSpacerItem(10, 1, QSizePolicy.Ignored, QSizePolicy.Preferred))
 
-	def __setup_button_widget(self):
+	def __setup_card_widget(self):
 		# self.button_rows = self.isqrt(self.generator.get_size())
 		# self.button_cols = self.button_rows if self.button_rows * (self.button_rows + 1) > self.generator.get_size() else self.button_rows + 1
 		button_rows = 1
 		button_cols = self.deque.get_size()
-		for i in reversed(range(self.button_widget.layout().count())): 
-			self.button_widget.layout().itemAt(i).widget().setParent(None)
-		self.button_array = [StyledPushButton() for _ in range(self.deque.get_size())]
+		for i in reversed(range(self.card_widget.layout().count())): 
+			self.card_widget.layout().itemAt(i).widget().setParent(None)
+		self.card_button_array = [StyledPushButton() for _ in range(self.deque.get_size())]
 		for row in range(button_rows):
 			for col in range(button_cols):
 				pos = row * button_cols + col
-				self.button_widget.layout().addWidget(self.button_array[pos], row, col)
-				self.button_array[pos].clicked.connect(partial(self.draw_card, pos))
+				self.card_widget.layout().addWidget(self.card_button_array[pos], row, col)
+				self.card_button_array[pos].clicked.connect(partial(self.draw_card, pos))
 
 
 	def __run_ui(self):
@@ -105,7 +105,7 @@ class MainGameWidget(QWidget):
 
 	def __reset_ui(self):
 		self.__load_lock_status()
-		self.__setup_button_widget()
+		self.__setup_card_widget()
 		self.__setup_base_widget()
 		self.show_welcome_screen()
 
@@ -121,8 +121,8 @@ class MainGameWidget(QWidget):
 		card = self.deque.get_card()
 
 		# update button
-		self.button_array[pos].setEnabled(False)
-		self.button_array[pos].setText(card.kind)
+		self.card_button_array[pos].setEnabled(False)
+		self.card_button_array[pos].setText(card.kind)
 		print(card.kind)
 
 		if card.kind == "green":
@@ -139,16 +139,19 @@ class MainGameWidget(QWidget):
 		elif card.kind == "black":
 			self.lock_counter += 1
 			self.lock_counter_widget.add_locked()
+			self.time_restrictor.update_restriction_time(card.hours)
 			if self.lock_counter >= Configuration().LOCK_LIMIT:
 				self.start_restriction()
 			else:
 				self.view.setHtml(
-					self.generator.get_current_restriction(self.time_restrictor.update_restriction_time(card.hours),
+					self.generator.get_current_restriction(self.time_restrictor.get_current_restriction_time(),
 				                                       text="How unfortuneate, you picked a Lock!\nI've added " + str(card.hours) + "h to your Lockup!"),
 				QUrl(Configuration().HTML_REL_PATH))
 
 		elif card.kind == "yellow": # todo implement functionality
 			logging.error("Not implemented yet.")
+			# add cards to deck
+			# update the button widget
 		elif card.kind == "red":
 			self.view.setHtml(self.generator.get_task_view(), QUrl(Configuration().HTML_REL_PATH))
 		else:
@@ -182,25 +185,26 @@ class MainGameWidget(QWidget):
 	def stop_restriction(self):
 		logging.info("Stop Restriction")
 		self.lock_counter_widget.reset()
-		self.__setup_button_widget()
+		self.__setup_card_widget()
 		self.unlock_counter = 0
 		self.lock_counter = 0
 		self.time_restrictor.store_restriction_time(datetime.now())
+		self.time_restrictor.reset()
 		self.store_lock_status()
 		self.show_welcome_screen()
 
 	def activate_buttons(self):
-		for button_number in range(self.button_widget.layout().count()):
+		for button_number in range(self.card_widget.layout().count()):
 			try:
-				self.button_widget.layout().itemAt(button_number).widget().setEnabled(True)
-				self.button_widget.layout().itemAt(button_number).widget().setText("")
+				self.card_widget.layout().itemAt(button_number).widget().setEnabled(True)
+				self.card_widget.layout().itemAt(button_number).widget().setText("")
 			except AttributeError:
 				logging.error("Non-button element in button widget, could not be disabled.")
 
 	def deactivate_buttons(self):
-		for button_number in range(self.button_widget.layout().count()):
+		for button_number in range(self.card_widget.layout().count()):
 			try:
-				self.button_widget.layout().itemAt(button_number).widget().setEnabled(False)
+				self.card_widget.layout().itemAt(button_number).widget().setEnabled(False)
 			except AttributeError:
 				logging.error("Non-button element in button widget, could not be disabled.")
 
