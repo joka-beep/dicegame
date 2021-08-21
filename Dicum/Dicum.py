@@ -19,6 +19,8 @@ from DequeManager import DequeManager
 from TimeRestrictor import TimeRestrictor
 from LockCounterWidget import LockCounterWidget
 
+logging.basicConfig(level=logging.DEBUG)
+
 
 class StyledPushButton(QPushButton):
 	def __init__(self, *args, **kwargs):
@@ -37,64 +39,79 @@ class StyledPushButton(QPushButton):
 class MainGameWidget(QWidget):
 	def __init__(self):
 		super(QWidget, self).__init__()
-		self.__reset()
-		self.__setup_ui()
-		self.__run_ui()
-
-	def __run_ui(self):
-		self.update_welcome()
-		if self.time_restrictor.is_restricted():
-			self.lock_counter_widget.set_locked()
-
-	def __reset(self):
-		self.lock_counter = 0
-		self.unlock_counter = 0
 		self.time_restrictor = TimeRestrictor()
 		self.timer = QTimer(self)
-		self.timer.timeout.connect(lambda: self.update_welcome())
-
-		lock_counter = self.findChild(LockCounterWidget, "lock_counter")
-		if lock_counter:
-			lock_counter.reset()
+		self.timer.timeout.connect(lambda: self.stop_restriction())
 		self.generator = ContentGenerator()
 		self.deque = DequeManager(Configuration().DEQUE_FILE)
-
-	def __setup_ui(self):
-		# calculate button row and column length based on number of commands
-		self.button_array = [StyledPushButton() for _ in range(self.deque.get_size())]
-
-		# self.button_rows = self.isqrt(self.generator.get_size())
-		# self.button_cols = self.button_rows if self.button_rows * (self.button_rows + 1) > self.generator.get_size() else self.button_rows + 1
-		self.button_rows = 1
-		self.button_cols = self.deque.get_size()
-
-		self.button_widget = QWidget(self)
-		# self.button_widget.setFixedSize(500, 130)
-		# self.button_widget.setFixedHeight(130)
-		self.button_widget.setLayout(QGridLayout())
-		for row in range(self.button_rows):
-			for col in range(self.button_cols):
-				pos = row * self.button_cols + col
-				self.button_widget.layout().addWidget(self.button_array[pos], row, col)
-				self.button_array[pos].clicked.connect(partial(self.draw_card, pos))
-
-		self.button_widget.setSizePolicy(
-			QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding))
-
-		# Setting up the view
 		self.view = QtWebEngineWidgets.QWebEngineView()
-
+		
+		self.button_widget = QWidget(self)
+		self.button_widget.setLayout(QGridLayout())
+		self.button_array = []
+		self.__setup_button_widget()
+		
 		self.base_widget = QWidget(self)
 		self.base_widget.setLayout(QHBoxLayout())
+		self.__setup_base_widget()
+		
+		self.lock_counter = 0
+		self.unlock_counter = 0
+		self.__load_lock_status()
+		self.lock_counter_widget = LockCounterWidget(current_locked=self.lock_counter, current_unlocked=self.unlock_counter)
+		#self.lock_counter_widget.setObjectName("lock_counter")
+		
+		self.__setup_ui()
+			
+		self.show_welcome_screen()
+
+
+	def __load_lock_status(self):
+		with open(Configuration().LOCK_STATUS_FILE) as file:
+			lines = file.readlines()
+			print(lines)
+			if len(lines) < 2:
+				logging.warning("Lock status file malformatted")
+			self.lock_counter = int(lines[0].strip())
+			self.unlock_counter = int(lines[1].strip())
+
+	def __setup_base_widget(self):
 		self.base_widget.setGeometry(0, 0, 0, 130)
 		self.base_widget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
 		self.base_widget.layout().addItem(QSpacerItem(10, 1, QSizePolicy.Ignored, QSizePolicy.Preferred))
 		self.base_widget.layout().addWidget(self.button_widget)
 		self.base_widget.layout().addItem(QSpacerItem(10, 1, QSizePolicy.Ignored, QSizePolicy.Preferred))
 
+	def __setup_button_widget(self):
+		# self.button_rows = self.isqrt(self.generator.get_size())
+		# self.button_cols = self.button_rows if self.button_rows * (self.button_rows + 1) > self.generator.get_size() else self.button_rows + 1
+		button_rows = 1
+		button_cols = self.deque.get_size()
+		for i in reversed(range(self.button_widget.layout().count())): 
+			self.button_widget.layout().itemAt(i).widget().setParent(None)
+		self.button_array = [StyledPushButton() for _ in range(self.deque.get_size())]
+		for row in range(button_rows):
+			for col in range(button_cols):
+				pos = row * button_cols + col
+				self.button_widget.layout().addWidget(self.button_array[pos], row, col)
+				self.button_array[pos].clicked.connect(partial(self.draw_card, pos))
+
+
+	def __run_ui(self):
+		self.show_welcome_screen()
+		if self.time_restrictor.is_restricted():
+			self.lock_counter_widget.set_locked()
+
+
+	def __reset_ui(self):
+		self.__load_lock_status()
+		self.__setup_button_widget()
+		self.__setup_base_widget()
+		self.show_welcome_screen()
+
+
+	def __setup_ui(self):
 		self.setLayout(QVBoxLayout())
-		self.lock_counter_widget = LockCounterWidget()
-		self.lock_counter_widget.setObjectName("lock_counter")
 		self.layout().addWidget(self.lock_counter_widget)
 		self.layout().addWidget(self.view)
 		self.layout().addWidget(self.base_widget)
@@ -106,6 +123,7 @@ class MainGameWidget(QWidget):
 		# update button
 		self.button_array[pos].setEnabled(False)
 		self.button_array[pos].setText(card.kind)
+		print(card.kind)
 
 		if card.kind == "green":
 			self.unlock_counter += 1
@@ -137,31 +155,39 @@ class MainGameWidget(QWidget):
 			logging.error("Card type not handled")
 
 
-	def update_welcome(self, timer=None):
+	def show_welcome_screen(self):
 		if self.time_restrictor.is_restricted():
+			self.show_locked_screen()
+		else:
+			self.view.setHtml(self.generator.get_unrestricted(), QUrl(Configuration().HTML_REL_PATH))
+			self.activate_buttons()
+			self.timer.stop()
+	
+	def show_locked_screen(self):
 			self.view.setHtml(self.generator.get_restricted(self.time_restrictor.get_end_time_iso()),
 			                  QUrl(Configuration().HTML_REL_PATH))
 			self.deactivate_buttons()
 			self.timer.setInterval(self.time_restrictor.get_remaining_time().microseconds)
 			self.timer.start()
-		else:
-			self.view.setHtml(self.generator.get_unrestricted(), QUrl(Configuration().HTML_REL_PATH))
-			self.activate_buttons()
-			self.lock_counter_widget.reset()
-			if timer:
-				timer.stop()
 
 	def start_restriction(self):
 		logging.info("Start Restriction")
+		self.deactivate_buttons()
+		self.lock_counter = 0
+		self.unlock_counter = 0
+		self.store_lock_status()
 		self.time_restrictor.store_restriction_time()
-		self.__reset()
-		self.__run_ui()
+		self.show_locked_screen()
 
 	def stop_restriction(self):
 		logging.info("Stop Restriction")
+		self.lock_counter_widget.reset()
+		self.__setup_button_widget()
+		self.unlock_counter = 0
+		self.lock_counter = 0
 		self.time_restrictor.store_restriction_time(datetime.now())
-		self.__reset()
-		self.__run_ui()
+		self.store_lock_status()
+		self.show_welcome_screen()
 
 	def activate_buttons(self):
 		for button_number in range(self.button_widget.layout().count()):
@@ -178,6 +204,7 @@ class MainGameWidget(QWidget):
 			except AttributeError:
 				logging.error("Non-button element in button widget, could not be disabled.")
 
+
 	@staticmethod
 	def isqrt(n):
 		x = n
@@ -186,6 +213,11 @@ class MainGameWidget(QWidget):
 			x = y
 			y = (x + n // x) // 2
 		return x
+
+	def store_lock_status(self):
+		with open(Configuration().LOCK_STATUS_FILE, "w") as file:
+			file.write(str(self.lock_counter) + "\n")
+			file.write(str(self.unlock_counter) + "\n")
 
 
 class MainWindow(QMainWindow):
@@ -200,16 +232,12 @@ class MainWindow(QMainWindow):
 		self.show()
 
 	def closeEvent(self, event):
-		if self.main_widget.time_restrictor.restriction_time_changed:
-			self.main_widget.time_restrictor.store_restriction_time()
 		self.main_widget.deque.save_deque()
+		self.main_widget.store_lock_status()
 		event.accept()
 
 
 if __name__ == '__main__':
-	#logging.basicConfig(filename=tempfile.TemporaryFile().name, level=logging.DEBUG)
-	logging.basicConfig(level=logging.DEBUG)
-
 	app = QApplication([])
 	app.setStyleSheet(
 		"QPushButton { background-color: darkred; color: black } QMainWindow { background-color: black }")

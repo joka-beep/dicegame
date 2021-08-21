@@ -41,14 +41,12 @@ class Configuration:
 					file.write(
 						"num,2,0\nnum,3,0\nnum,5,0\nnum,5,0\nnum,12,0\nlock,unlock,0\nlock,unlock,0\nlock,lock,0\nlock,lock,0")
 
-			self.GAME_CONFIG = self.COMMANDS
-
 			if not deque_file:
 				deque_file = "deque.yaml"
 			self.DEQUE_FILE = os.path.join(self.CONFIG, deque_file)
 			if not os.path.isfile(self.DEQUE_FILE):
 				logging.warning("Deque configuration not found, creating from default.")
-				default_deque = [BlackCard(3), BlackCard(3), BlackCard(3), BlackCard(3), RedCard("Fuck with dildo", 12), RedCard("Cum while in chastity", 12), GreenCard()]
+				default_deque = [BlackCard(3), BlackCard(3), BlackCard(3), BlackCard(3), GreenCard(), GreenCard(), GreenCard(), GreenCard(), GreenCard(), GreenCard()]
 				DequeManager.save_specific_deque(self.DEQUE_FILE, default_deque)
 
 
@@ -57,7 +55,11 @@ class Configuration:
 				with open(self.LOCK_TIME_LOCATION, "w+") as file:
 					file.write(datetime.now().isoformat())
 
-			# Can be changed by the user and during runtime - e.g. Images etc...
+			self.LOCK_STATUS_FILE = os.path.join(self.CONFIG, "lock_status")
+			if not os.path.isfile(self.LOCK_STATUS_FILE):
+				with open(self.LOCK_STATUS_FILE, "w") as file:
+					file.write("0\n0")
+
 			self.RESOURCES = os.path.join(self.CONFIG, "resources")
 			if not os.path.isdir(self.RESOURCES):
 				os.makedirs(self.RESOURCES)
@@ -108,8 +110,6 @@ class Configuration:
 			except FileExistsError:
 				pass
 
-			if not os.path.isfile(self.LOCK_TIME_LOCATION):
-				logging.critical("Dicum time file does not exist.")
 
 		def __str__(self):
 			return repr(self)

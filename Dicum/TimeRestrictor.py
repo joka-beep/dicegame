@@ -9,7 +9,7 @@ class TimeRestrictor():
 	def __init__(self):
 		self.BASE_FORMAT = "%H:%M:%S"
 
-		self.current_restriction_time = timedelta(hours=1)
+		self.current_restriction_time = timedelta(hours=0)
 		self.restriction_time_changed = False
 
 		self.config_filepath = Configuration().LOCK_TIME_LOCATION

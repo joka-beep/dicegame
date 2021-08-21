@@ -56,7 +56,11 @@ class DequeManager():
         return len(self.deque)
 
     def get_card(self):
-        return self.deque.pop()
+        try:
+            return self.deque.pop()
+        except IndexError:
+            logging.error("Deque is empty, no card can be drawn. Green card returned.")
+            return GreenCard()
 
     @staticmethod
     def save_specific_deque(filename, deque):
